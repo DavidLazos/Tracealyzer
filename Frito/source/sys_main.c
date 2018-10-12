@@ -44,6 +44,7 @@ void vTask1(void *pvParameters){
     /* Set high end timer GIO port hetPort pin direction to all output */
 
     gioSetDirection(hetPORT1, 0xFFFFFFFF);
+//        static int cuenta=0;
     for(;;)
     {
 
@@ -55,13 +56,21 @@ void vTask1(void *pvParameters){
             {
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 17, gioGetBit(hetPORT1, 17) ^ 1);
+//                                cuenta=cuenta+1;
+//                                if(cuenta==100)
+//                                    vTraceStop();
+//                           wait(20000);
                 xSemaphoreGive( xSemaphore );
                 vTaskDelay(50);
+//                vTraceInstanceFinishedNext();
 
             }
             else{
                 gioSetBit(hetPORT1, 27, gioGetBit(hetPORT1, 27) ^ 1);
+                //gioSetBit(hetPORT1, 27, 1);
                 vTaskDelay(10);
+//                vTraceInstanceFinishedNext();
+
             }
         }
     }
@@ -84,6 +93,7 @@ void vTask1(void *pvParameters){
 void vTask2(void *pvParameters){
     /* Set high end timer GIO port hetPort pin direction to all output */
     gioSetDirection(hetPORT1, 0xFFFFFFFF);
+    //   xTaskCreate( vTask1, "Task 1", 256, NULL, 5, NULL );
 
     for(;;)
     {
@@ -93,16 +103,21 @@ void vTask2(void *pvParameters){
             {
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 0, gioGetBit(hetPORT1, 0) ^ 1);
+//                               wait(200000);
                 xSemaphoreGive(xSemaphore);
                 vTaskDelay(150);
+//                vTraceInstanceFinishedNext();
+
 
             }
             else{
                 gioSetBit(hetPORT1, 18, gioGetBit(hetPORT1, 18) ^ 1);
                 //gioSetBit(hetPORT1, 18, 1);
                 vTaskDelay(10);
+//                vTraceInstanceFinishedNext();
+
             }
-            
+            // vTraceStop();
         }
     }
 }
@@ -118,16 +133,23 @@ void vTask3(void *pvParameters){
             if( xSemaphoreTake( xSemaphore, ( TickType_t ) 1 ) == pdTRUE )
             {
                 //sciDisplayText(UART,&TEXT1[0],TSIZE1);        /* send text code 1 */
+                //wait(200);
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 25, gioGetBit(hetPORT1, 25) ^ 1);
+                //vTaskDelay(1000);
                 sciDisplayText(UART,&TEXT1[0],TSIZE1);
                 wait(100);
+                //vTraceStop();
                 xSemaphoreGive( xSemaphore );
                 vTaskDelay(1000);
+//                vTraceInstanceFinishedNext();
+
             }
             else{
                 sciDisplayText(UART,&TEXT2[0],TSIZE2);
                 vTaskDelay(100);
+//                vTraceInstanceFinishedNext();
+
             }
         }
     }
@@ -149,20 +171,21 @@ void main(void){
     //        /* Task could not be created */
     //        while(1);
     //    }
-
-    //uiTraceStart();
-
+    //vTraceSetFilterGroup(FilterGroup1);
     xSemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive( xSemaphore );
 
-    //uiTraceStart();
-
+    xTaskCreate( vTask3, "Task 3", 256, NULL, 1, NULL );
     xTaskCreate( vTask1, "Task 1", 256, NULL, 5, NULL );
     xTaskCreate( vTask2, "Task 2", 256, NULL, 3, NULL );
-    xTaskCreate( vTask3, "Task 3", 256, NULL, 1, NULL );
+
+    //vTraceSetFilterMask( FilterGroup1);
+    //vTraceSetFilterGroup(FilterGroup0);
+
 
     /* Start Scheduler */
-    vTaskStartScheduler();    /* Run forever */
+    vTaskStartScheduler();
+    /* Run forever */
     while(1);
     /* USER CODE END */
 }

@@ -126,7 +126,7 @@ extern "C" {
  *
  * Default value is 0 (= include additional events).
  ******************************************************************************/
-#define TRC_CFG_SCHEDULING_ONLY 0
+#define TRC_CFG_SCHEDULING_ONLY 1
 
  /******************************************************************************
  * TRC_CFG_INCLUDE_MEMMANG_EVENTS
@@ -178,7 +178,7 @@ extern "C" {
  * Note: tracing ISRs requires that you insert calls to vTraceStoreISRBegin
  * and vTraceStoreISREnd in your interrupt handlers.
  *****************************************************************************/
-#define TRC_CFG_INCLUDE_ISR_TRACING 0
+#define TRC_CFG_INCLUDE_ISR_TRACING 1
 
  /*****************************************************************************
  * TRC_CFG_INCLUDE_READY_EVENTS

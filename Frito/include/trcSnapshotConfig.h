@@ -82,7 +82,7 @@
  * Default value is 1000, which means that 4000 bytes is allocated for the
  * event buffer.
  ******************************************************************************/
-#define TRC_CFG_EVENT_BUFFER_SIZE 1000
+#define TRC_CFG_EVENT_BUFFER_SIZE 7000
 
 /*******************************************************************************
  * TRC_CFG_NTASK, TRC_CFG_NISR, TRC_CFG_NQUEUE, TRC_CFG_NSEMAPHORE...
@@ -148,7 +148,7 @@
  *
  * Default value is 800.
  ******************************************************************************/
-#define TRC_CFG_SYMBOL_TABLE_SIZE 800
+#define TRC_CFG_SYMBOL_TABLE_SIZE 650
 
 #if (TRC_CFG_SYMBOL_TABLE_SIZE == 0)
 #error "TRC_CFG_SYMBOL_TABLE_SIZE may not be zero!"
@@ -161,15 +161,15 @@
  * kernel objects, such as tasks and queues. If longer names are used, they will
  * be truncated when stored in the recorder.
  *****************************************************************************/
-#define TRC_CFG_NAME_LEN_TASK			20
-#define TRC_CFG_NAME_LEN_ISR			20
-#define TRC_CFG_NAME_LEN_QUEUE			20
+#define TRC_CFG_NAME_LEN_TASK			15
+#define TRC_CFG_NAME_LEN_ISR			5
+#define TRC_CFG_NAME_LEN_QUEUE			15
 #define TRC_CFG_NAME_LEN_SEMAPHORE		20
-#define TRC_CFG_NAME_LEN_MUTEX			20
-#define TRC_CFG_NAME_LEN_TIMER			20
-#define TRC_CFG_NAME_LEN_EVENTGROUP 	20
-#define TRC_CFG_NAME_LEN_STREAMBUFFER 	20
-#define TRC_CFG_NAME_LEN_MESSAGEBUFFER 	20
+#define TRC_CFG_NAME_LEN_MUTEX			15
+#define TRC_CFG_NAME_LEN_TIMER			15
+#define TRC_CFG_NAME_LEN_EVENTGROUP 	15
+#define TRC_CFG_NAME_LEN_STREAMBUFFER 	15
+#define TRC_CFG_NAME_LEN_MESSAGEBUFFER 	15
 
 /******************************************************************************
  *** ADVANCED SETTINGS ********************************************************
