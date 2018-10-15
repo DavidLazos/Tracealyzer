@@ -44,7 +44,6 @@ void vTask1(void *pvParameters){
     /* Set high end timer GIO port hetPort pin direction to all output */
 
     gioSetDirection(hetPORT1, 0xFFFFFFFF);
-        static int cuenta=0;
     for(;;)
     {
 
@@ -56,17 +55,12 @@ void vTask1(void *pvParameters){
             {
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 17, gioGetBit(hetPORT1, 17) ^ 1);
-                                cuenta=cuenta+1;
-                                if(cuenta==100)
-                                    vTraceStop();
-                //           wait(20000);
                 xSemaphoreGive( xSemaphore );
                 vTaskDelay(50);
 
             }
             else{
                 gioSetBit(hetPORT1, 27, gioGetBit(hetPORT1, 27) ^ 1);
-                //gioSetBit(hetPORT1, 27, 1);
                 vTaskDelay(10);
             }
         }
@@ -90,7 +84,6 @@ void vTask1(void *pvParameters){
 void vTask2(void *pvParameters){
     /* Set high end timer GIO port hetPort pin direction to all output */
     gioSetDirection(hetPORT1, 0xFFFFFFFF);
-    //   xTaskCreate( vTask1, "Task 1", 256, NULL, 5, NULL );
 
     for(;;)
     {
@@ -100,7 +93,6 @@ void vTask2(void *pvParameters){
             {
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 0, gioGetBit(hetPORT1, 0) ^ 1);
-                //               wait(200000);
                 xSemaphoreGive(xSemaphore);
                 vTaskDelay(150);
 
@@ -110,7 +102,7 @@ void vTask2(void *pvParameters){
                 //gioSetBit(hetPORT1, 18, 1);
                 vTaskDelay(10);
             }
-            // vTraceStop();
+            
         }
     }
 }
@@ -126,13 +118,10 @@ void vTask3(void *pvParameters){
             if( xSemaphoreTake( xSemaphore, ( TickType_t ) 1 ) == pdTRUE )
             {
                 //sciDisplayText(UART,&TEXT1[0],TSIZE1);        /* send text code 1 */
-                //wait(200);
                 /* Toggle HET[1] with timer tick */
                 gioSetBit(hetPORT1, 25, gioGetBit(hetPORT1, 25) ^ 1);
-                //vTaskDelay(1000);
                 sciDisplayText(UART,&TEXT1[0],TSIZE1);
                 wait(100);
-                //vTraceStop();
                 xSemaphoreGive( xSemaphore );
                 vTaskDelay(1000);
             }
