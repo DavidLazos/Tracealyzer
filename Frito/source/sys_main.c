@@ -166,11 +166,15 @@ void main(void){
 #if(configUSE_TRACE_FACILITY==1)
     vTraceEnable(TRC_START);
 #endif
-    //    if (xTaskCreateRestricted(&xTaskParamters1, &xTask1Handle) != pdTRUE)
-    //    {
-    //        /* Task could not be created */
-    //        while(1);
-    //    }
+
+//
+//
+//================En caso de habilitar los vTraceSet....=========================
+//=====se captura unicamente los grupos filtrados, en este caso se mostraria=====
+//=======unicamente el grupo1 que incluye semaforo, creacion de tareas y=========
+//============los estados de esas tareas, no muestra IDLE (Grupo0)===============
+//
+//
     //vTraceSetFilterGroup(FilterGroup1);
     xSemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive( xSemaphore );
