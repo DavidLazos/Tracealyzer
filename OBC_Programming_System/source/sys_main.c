@@ -70,8 +70,10 @@
  *   The user can use this function to implement the application.
  */
 
-SemaphoreHandle_t xSemaphore =NULL;
-
+TaskHandle_t xErase;
+TaskHandle_t xLoad;
+TaskHandle_t xProgram;
+TaskHandle_t xGeneral;
 
 packet_t packet;
 status_t status;
@@ -90,18 +92,15 @@ section_field sections[MAX_SECTIONS_NUMBER];
 uint32_t external_flash_address;
 uint32_t chunk_size;
 uint8_t jtag_data[DEFAULT_BLOCKLEN];
-
+//boolean bol=false;
+//boolean whi=true;
 /* USER CODE BEGIN (2) */
-void vTask1(void *pvParameters){
-    commInit();
-    if (!SDInit())
-        exit(0);
-    while(1)
-    {
-        packet = receivePacket();
 
-        switch(packet.command){
-        case ERASE_FLASH:
+
+void vTask2(void *pvParameters){
+    for(;;){
+        while(1)
+        {
             i = 0;
             first_block_address =
                     0x0 | ( packet.payload_content.erase_command_content.start_address[0] << 24 )
@@ -109,8 +108,8 @@ void vTask1(void *pvParameters){
                     | ( packet.payload_content.erase_command_content.start_address[2] << 8 )
                     | ( packet.payload_content.erase_command_content.start_address[3] );
             sd_size = 0x0 | ( packet.payload_content.erase_command_content.size[0] << 16 )
-                                  | ( packet.payload_content.erase_command_content.size[1] << 8 )
-                                  | ( packet.payload_content.erase_command_content.size[2] );
+                                                                  | ( packet.payload_content.erase_command_content.size[1] << 8 )
+                                                                  | ( packet.payload_content.erase_command_content.size[2] );
             do
             {
                 sd_status = eraseBlocks(first_block_address, sd_size * DEFAULT_BLOCKLEN);
@@ -118,9 +117,19 @@ void vTask1(void *pvParameters){
             }while( (!sd_status) || (i<10) );
             status = (sd_status ? SUCCESS : ERROR);
             break;
-        case LOAD_PROGRAM:
+
+        }
+        vTaskDelete(NULL);
+    }
+}
+
+
+void vTask3(void *pvParameters){
+    for(;;){
+
+        while(1){
             start_address = 0x0UL | (packet.payload_content.load_command_content.seq_number[0] << 8)
-            | (packet.payload_content.load_command_content.seq_number[1]);
+                    | (packet.payload_content.load_command_content.seq_number[1]);
 
             for(i=0; i<DATA_LENGTH; i++)
             {
@@ -134,10 +143,21 @@ void vTask1(void *pvParameters){
                 ++i;
             }while( (!sd_status) || (i<10) );
             status = (sd_status ? SUCCESS : ERROR);
+
             break;
-        case PROGRAM_FLASH:
+        }
+        vTaskSuspend(NULL);
+    }
+}
+
+
+
+void vTask4(void *pvParameters){
+    for(;;){
+
+        while(1){
             sections_number = 0x0UL | (packet.payload_content.program_command_content.number_sections[0] << 8)
-            | (packet.payload_content.program_command_content.number_sections[1]);
+                    | (packet.payload_content.program_command_content.number_sections[1]);
 
             for(i = 0; i < sections_number; i++)
             {
@@ -194,17 +214,53 @@ void vTask1(void *pvParameters){
             }
             status = SUCCESS;
             break;
+        }
+        vTaskDelete(NULL);
+    }
+}
+
+void vTask1(void *pvParameters){
+    //    for(;;){
+    //        whi=true;
+    //        bol=false;
+    commInit();
+    if (!SDInit())
+        printf("Error al inicializar SD");
+    //while(whi)
+    while(1)
+
+    {
+        packet = receivePacket();
+
+        switch(packet.command){
+        case ERASE_FLASH:
+            //vTaskResume(xErase);
+            xTaskCreate( vTask2, "Erase", 256, NULL, 5|portPRIVILEGE_BIT, &xErase );
+            break;
+        case LOAD_PROGRAM:
+            vTaskResume(xLoad);
+//            xTaskCreate( vTask3, "Load", 256, NULL, 5|portPRIVILEGE_BIT, &xLoad );
+            break;
+        case PROGRAM_FLASH:
+            //               bol=true;
+            //vTaskResume(xProgram);
+            xTaskCreate( vTask4, "Program", 256, NULL, 5|portPRIVILEGE_BIT, &xProgram );
+            break;
         default:
             status = ERROR;
             break;
         }
-
-        /* Report status */
         sendMessage(status);
-        //vTaskDelay(10);
-    }
+        //            if(status==SUCCESS && bol==true){
+        //                whi=false;//aca suspend
+        //}
 
+        //        }
+        //        vTaskDelay(100);
+
+    }
 }
+
 /* USER CODE END */
 
 
@@ -212,136 +268,17 @@ void vTask1(void *pvParameters){
 int main(void)
 {
     /* USER CODE BEGIN (3) */
-
-
-    /*	Start main function	*/
     _disable_interrupt_();
     vTraceEnable(TRC_INIT);
+
 #if(configUSE_TRACE_FACILITY==1)
     vTraceEnable(TRC_START);
 #endif
 
-    xSemaphore = xSemaphoreCreateBinary();
-    xSemaphoreGive( xSemaphore );
-
-
-    xTaskCreate( vTask1, "Task 1", 256, NULL, 5 | portPRIVILEGE_BIT, NULL );
-
-    /*	Initialize interfaces	*/
-    //    xTaskCreateRestricted( &xTask1, NULL );
+    xTaskCreate( vTask1, "General", 256, NULL, 1|portPRIVILEGE_BIT, &xGeneral );
+    xTaskCreate( vTask3, "Load", 256, NULL, 5|portPRIVILEGE_BIT, &xLoad );
+    vTaskSuspend(xLoad);
     vTaskStartScheduler();
-
-    //	while(1)
-    //	{
-    //		packet = receivePacket();
-    //
-    //		switch(packet.command){
-    //		case ERASE_FLASH:
-    //			i = 0;
-    //			first_block_address =
-    //					0x0 | ( packet.payload_content.erase_command_content.start_address[0] << 24 )
-    //						| ( packet.payload_content.erase_command_content.start_address[1] << 16 )
-    //						| ( packet.payload_content.erase_command_content.start_address[2] << 8 )
-    //						| ( packet.payload_content.erase_command_content.start_address[3] );
-    //			sd_size = 0x0 | ( packet.payload_content.erase_command_content.size[0] << 16 )
-    //						  | ( packet.payload_content.erase_command_content.size[1] << 8 )
-    //						  | ( packet.payload_content.erase_command_content.size[2] );
-    //			do
-    //			{
-    //				sd_status = eraseBlocks(first_block_address, sd_size * DEFAULT_BLOCKLEN);
-    //				++i;
-    //			}while( (!sd_status) || (i<10) );
-    //			status = (sd_status ? SUCCESS : ERROR);
-    //			break;
-    //		case LOAD_PROGRAM:
-    //			start_address = 0x0UL | (packet.payload_content.load_command_content.seq_number[0] << 8)
-    //								  | (packet.payload_content.load_command_content.seq_number[1]);
-    //
-    //			for(i=0; i<DATA_LENGTH; i++)
-    //			{
-    //				sd_data[i] = (0xFF & packet.payload_content.load_command_content.data[i]);
-    //			}
-    //
-    //			i = 0;
-    //			do
-    //			{
-    //				sd_status = writeSingleDataBlock(start_address*DATA_LENGTH, sd_data);
-    //				++i;
-    //			}while( (!sd_status) || (i<10) );
-    //			status = (sd_status ? SUCCESS : ERROR);
-    //			break;
-    //		case PROGRAM_FLASH:
-    //			sections_number = 0x0UL | (packet.payload_content.program_command_content.number_sections[0] << 8)
-    //									| (packet.payload_content.program_command_content.number_sections[1]);
-    //
-    //			for(i = 0; i < sections_number; i++)
-    //			{
-    //				sections[i].length =
-    //						0x0 | (packet.payload_content.program_command_content.sections[i].section_length[0] << 16)
-    //							| (packet.payload_content.program_command_content.sections[i].section_length[1] << 8)
-    //							| (packet.payload_content.program_command_content.sections[i].section_length[2]);
-    //				sections[i].start_address =
-    //						0x0 | (packet.payload_content.program_command_content.sections[i].section_start_address[0] << 16)
-    //							| (packet.payload_content.program_command_content.sections[i].section_start_address[1] << 8)
-    //							| (packet.payload_content.program_command_content.sections[i].section_start_address[2]);
-    //			}
-    //
-    //			i = 0;
-    //			do
-    //			{
-    //				jtag_status = initProgramming();
-    //				++i;
-    //			}while( (!jtag_status) && (i<10) );
-    //
-    //			if(!jtag_status)
-    //			{
-    //				status = ERROR;
-    //				break;
-    //			}
-    //			else
-    //			{
-    //				external_flash_address = 0x0UL;
-    //				for(i = 0; i < sections_number; i++)
-    //				{
-    //					while(sections[i].length)
-    //					{
-    //						chunk_size = (sections[i].length > DEFAULT_BLOCKLEN ? DEFAULT_BLOCKLEN : sections[i].length);
-    //						sd_read_data = readSingleDataBlock(external_flash_address);
-    //
-    //						for(j=0; j<DEFAULT_BLOCKLEN; j++)
-    //						{
-    //							jtag_data[j] = (0xFF & sd_read_data[j]);
-    //						}
-    //
-    //						jtag_status = flashProgramming((uint32_t*) jtag_data, chunk_size, sections[i].start_address);
-    //
-    //						external_flash_address += DEFAULT_BLOCKLEN;
-    //						sections[i].length -= chunk_size;
-    //						sections[i].start_address += chunk_size;
-    //						if(!jtag_status)
-    //						{
-    //							status = ERROR;
-    //							break;
-    //						}
-    //					}
-    //				}
-    //				resetController();
-    //			}
-    //			status = SUCCESS;
-    //			break;
-    //		default:
-    //			status = ERROR;
-    //			break;
-    //		}
-    //
-    //		/* Report status */
-    //		sendMessage(status);
-    //	}
-
     /* USER CODE END */
 
 }
-
-
-/* USER CODE BEGIN (4) */
-/* USER CODE END */
