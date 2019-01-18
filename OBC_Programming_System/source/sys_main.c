@@ -215,7 +215,10 @@ void vTask4(void *pvParameters){
             status = SUCCESS;
             break;
         }
+        systemREG1->SYSECR = (0x10) << 14;
+        ((void (*) (void)) 0x00000000) ();
         vTaskDelete(NULL);
+
     }
 }
 
@@ -270,6 +273,7 @@ int main(void)
     /* USER CODE BEGIN (3) */
     _disable_interrupt_();
     vTraceEnable(TRC_INIT);
+
 
 #if(configUSE_TRACE_FACILITY==1)
     vTraceEnable(TRC_START);
