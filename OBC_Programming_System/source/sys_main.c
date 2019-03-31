@@ -60,6 +60,10 @@
 #include "os_task.h"
 #include "os_semphr.h"
 
+#include <sys/types.h>
+#include <sha1.h>
+#include <string.h>
+
 /* USER CODE END */
 
 /** @fn void main(void)
@@ -94,6 +98,13 @@ uint32_t chunk_size;
 uint8_t jtag_data[DEFAULT_BLOCKLEN];
 //boolean bol=false;
 //boolean whi=true;
+
+SHA1_CTX sha;
+uint8_t result[SHA1_DIGEST_LENGTH];
+char *buffer;
+int n;
+
+
 /* USER CODE BEGIN (2) */
 
 
@@ -108,8 +119,8 @@ void vTask2(void *pvParameters){
                     | ( packet.payload_content.erase_command_content.start_address[2] << 8 )
                     | ( packet.payload_content.erase_command_content.start_address[3] );
             sd_size = 0x0 | ( packet.payload_content.erase_command_content.size[0] << 16 )
-                                                                  | ( packet.payload_content.erase_command_content.size[1] << 8 )
-                                                                  | ( packet.payload_content.erase_command_content.size[2] );
+                                                                                                          | ( packet.payload_content.erase_command_content.size[1] << 8 )
+                                                                                                          | ( packet.payload_content.erase_command_content.size[2] );
             do
             {
                 sd_status = eraseBlocks(first_block_address, sd_size * DEFAULT_BLOCKLEN);
@@ -119,6 +130,7 @@ void vTask2(void *pvParameters){
             break;
 
         }
+        SHA1Init(&sha);
         vTaskDelete(NULL);
     }
 }
@@ -129,11 +141,14 @@ void vTask3(void *pvParameters){
 
         while(1){
             start_address = 0x0UL | (packet.payload_content.load_command_content.seq_number[0] << 8)
-                    | (packet.payload_content.load_command_content.seq_number[1]);
+                                                            | (packet.payload_content.load_command_content.seq_number[1]);
 
             for(i=0; i<DATA_LENGTH; i++)
             {
                 sd_data[i] = (0xFF & packet.payload_content.load_command_content.data[i]);
+                buffer=sd_data[i];
+                n=strlen(buffer);
+                SHA1Update(&sha,(uint8_t *)buffer,n);
             }
 
             i = 0;
@@ -154,10 +169,14 @@ void vTask3(void *pvParameters){
 
 void vTask4(void *pvParameters){
     for(;;){
-
+        SHA1Final(result,&sha);
+        printf("0x");
+        for(n=0;n<SHA1_DIGEST_LENGTH;n++)
+            printf("%02x",result[n]);
+        putchar('\n');
         while(1){
             sections_number = 0x0UL | (packet.payload_content.program_command_content.number_sections[0] << 8)
-                    | (packet.payload_content.program_command_content.number_sections[1]);
+                                                            | (packet.payload_content.program_command_content.number_sections[1]);
 
             for(i = 0; i < sections_number; i++)
             {
@@ -215,6 +234,7 @@ void vTask4(void *pvParameters){
             status = SUCCESS;
             break;
         }
+
         systemREG1->SYSECR = (0x10) << 14;
         ((void (*) (void)) 0x00000000) ();
         vTaskDelete(NULL);
@@ -230,6 +250,15 @@ void vTask1(void *pvParameters){
     if (!SDInit())
         printf("Error al inicializar SD");
     //while(whi)
+
+    //    SHA1_CTX shac;
+    //    uint8_t results[SHA1_DIGEST_LENGTH];
+    //    char *buf;
+    //    int n;
+
+
+
+
     while(1)
 
     {
@@ -242,7 +271,7 @@ void vTask1(void *pvParameters){
             break;
         case LOAD_PROGRAM:
             vTaskResume(xLoad);
-//            xTaskCreate( vTask3, "Load", 256, NULL, 5|portPRIVILEGE_BIT, &xLoad );
+            //            xTaskCreate( vTask3, "Load", 256, NULL, 5|portPRIVILEGE_BIT, &xLoad );
             break;
         case PROGRAM_FLASH:
             //               bol=true;
@@ -273,6 +302,26 @@ int main(void)
     /* USER CODE BEGIN (3) */
     _disable_interrupt_();
     vTraceEnable(TRC_INIT);
+    /*
+    SHA1_CTX shac;
+    uint8_t results[SHA1_DIGEST_LENGTH];
+    char *buf;
+    int n;
+
+
+    buf="abc";
+    n=strlen(buf);
+    SHA1Init(&shac);
+    SHA1Update(&shac,(uint8_t *)buf,n);
+    SHA1Final(results,&shac);
+
+    printf("0x");
+    for(n=0;n<SHA1_DIGEST_LENGTH;n++)
+        printf("%02x",results[n]);
+    putchar('\n');
+
+     */
+
 
 
 #if(configUSE_TRACE_FACILITY==1)
